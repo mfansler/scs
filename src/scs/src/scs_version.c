@@ -1,6 +1,3 @@
-#include "constants.h"
+#include "glbopts.h"
 
-const char * scs_version(void) {
-    return SCS_VERSION;
-}
-
+const char *SCS(version)(void) { return SCS_VERSION; }

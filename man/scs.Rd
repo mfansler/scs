@@ -4,14 +4,12 @@
 \alias{scs}
 \title{SCS - Splitting Conic Solver}
 \usage{
-scs(A, b, obj, cone, control = list(max_iters = 2500L, normalize = TRUE,
-  verbose = FALSE, cg_rate = 2, scale = 5, rho_x = 0.001, alpha = 1.5, eps =
-  1e-06))
+scs(A, b, obj, cone, control = scs_control())
 }
 \arguments{
 \item{A}{a matrix of constraint coefficients. 
 \bold{NOTE:} The rows of matrix A have to be ordered according to the 
-order given in subsection \dQuote{Allowed cone parameters}. For more information see \bold{README}.}
+order given in subsection \dQuote{Allowed cone parameters}.}
 
 \item{b}{a numeric vector giving the primal constraints}
 
@@ -19,7 +17,7 @@ order given in subsection \dQuote{Allowed cone parameters}. For more information
 
 \item{cone}{a list giving the cone sizes}
 
-\item{control}{a list giving the control parameters. For more information see \bold{README}.}
+\item{control}{a list giving the control parameters.}
 }
 \value{
 list of solution vectors x, y, s and information about run
@@ -28,8 +26,6 @@ list of solution vectors x, y, s and information about run
 Solves convex cone programs via operator splitting.
 }
 \details{
-A more detailed description can be found in the README file.
-
 \subsection{Important Note}{ \cr
 The order of the rows in matrix \eqn{A} has to correspond to the order given in 
 the table \dQuote{Cone Arguments}, which means means rows corresponding to 
@@ -50,7 +46,7 @@ rows corresponding to \emph{exponential cones} fifth and rows corresponding to \
 
 \subsection{Allowed \emph{cone} parameters are}{
 \tabular{rllll}{ 
-   \tab \bold{Parameter} \tab \bold{Type} \tab \bold{Length} \tab             \bold{Description}                       \cr
+   \tab \bold{Parameter} \tab \bold{Type} \tab \bold{Length} \tab \bold{Description}                       \cr
    \tab \code{f}         \tab integer     \tab \eqn{1}       \tab number of primal zero cones (dual free cones),       \cr
    \tab                  \tab             \tab               \tab which corresponds to the primal equality constraints \cr
    \tab \code{l}         \tab integer     \tab \eqn{1}       \tab number of linear cones (non-negative cones)          \cr
@@ -59,19 +55,6 @@ rows corresponding to \emph{exponential cones} fifth and rows corresponding to \
    \tab \code{ep}        \tab integer     \tab \eqn{1}       \tab number of primal exponential cones                   \cr
    \tab \code{ed}        \tab integer     \tab \eqn{1}       \tab number of dual exponential cones                     \cr
    \tab \code{p}         \tab numeric     \tab \eqn{\geq1}   \tab vector of primal/dual power cone parameters          
-} }
-
-\subsection{Allowed \emph{control} parameters are}{
-\tabular{rllll}{ 
-   \tab \bold{Parameter} \tab \bold{Type}    \tab             \bold{Description}                                          \tab \bold{Default} \cr
-   \tab \code{max_iters} \tab integer        \tab giving the maximum number of iterations                                 \tab   2500   \cr
-   \tab \code{normalize} \tab boolean        \tab heuristic data rescaling                                                \tab   TRUE   \cr
-   \tab \code{verbose}   \tab boolean        \tab write out progress                                                      \tab   FALSE  \cr
-   \tab \code{cg_rate}   \tab numeric        \tab for indirect, tolerance goes down like \eqn{\frac{1}{iter}^{cg\_rate}}  \tab      2   \cr
-   \tab \code{scale}     \tab numeric        \tab if normalized, rescales by this factor                                  \tab      5   \cr
-   \tab \code{rho_x}     \tab numeric        \tab x equality constraint scaling                                           \tab   1e-3   \cr
-   \tab \code{alpha}     \tab numeric        \tab relaxation parameter                                                    \tab    1.5   \cr
-   \tab \code{eps}       \tab numeric        \tab convergence tolerance                                                   \tab   1e-3
 } }
 }
 \examples{
@@ -83,4 +66,3 @@ control <- list(eps = 1e-3, max_iters = 50)
 sol <- scs(A, b, obj, cone, control) 
 sol
 }
-

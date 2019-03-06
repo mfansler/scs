@@ -14,68 +14,57 @@
 #ifdef MATLAB_MEX_FILE
 
 static int istate;
-void startInterruptListener(void) {
-	istate = utSetInterruptEnabled(1);
-}
+void scs_start_interrupt_listener(void) { istate = utSetInterruptEnabled(1); }
 
-void endInterruptListener(void) {
-	utSetInterruptEnabled(istate);
-}
+void scs_end_interrupt_listener(void) { utSetInterruptEnabled(istate); }
 
-int isInterrupted(void) {
-	return utIsInterruptPending();
-}
+int scs_is_interrupted(void) { return utIsInterruptPending(); }
 
-#elif defined _WIN32 || defined _WIN64
+#elif (defined _WIN32 || _WIN64 || defined _WINDLL)
 
 static int int_detected;
-BOOL WINAPI handle_ctrlc(DWORD dwCtrlType) {
-	if (dwCtrlType != CTRL_C_EVENT) return FALSE;
-	int_detected = 1;
-	return TRUE;
+static BOOL WINAPI scs_handle_ctrlc(DWORD dwCtrlType) {
+  if (dwCtrlType != CTRL_C_EVENT) {
+    return FALSE;
+  }
+  int_detected = 1;
+  return TRUE;
 }
 
-void startInterruptListener(void) {
-	int_detected = 0;
-	SetConsoleCtrlHandler(handle_ctrlc, TRUE);
+void scs_start_interrupt_listener(void) {
+  int_detected = 0;
+  SetConsoleCtrlHandler(scs_handle_ctrlc, TRUE);
 }
 
-void endInterruptListener(void) {
-	SetConsoleCtrlHandler(handle_ctrlc, FALSE);
+void scs_end_interrupt_listener(void) {
+  SetConsoleCtrlHandler(scs_handle_ctrlc, FALSE);
 }
 
-int isInterrupted(void) {
-	return int_detected;
-}
+int scs_is_interrupted(void) { return int_detected; }
 
 #else /* Unix */
 
 #include <signal.h>
 static int int_detected;
 struct sigaction oact;
-void handle_ctrlc(int dummy) {
-	int_detected = dummy?dummy:-1;
+static void scs_handle_ctrlc(int dummy) { int_detected = dummy ? dummy : -1; }
+
+void scs_start_interrupt_listener(void) {
+  struct sigaction act;
+  int_detected = 0;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+  act.sa_handler = scs_handle_ctrlc;
+  sigaction(SIGINT, &act, &oact);
 }
 
-void startInterruptListener(void) {
-	struct sigaction act;
-	int_detected = 0;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	act.sa_handler = handle_ctrlc;
-	sigaction(SIGINT, &act, &oact);
+void scs_end_interrupt_listener(void) {
+  struct sigaction act;
+  sigaction(SIGINT, &oact, &act);
 }
 
-void endInterruptListener(void) {
-	struct sigaction act;
-	sigaction(SIGINT, &oact, &act);
-}
-
-int isInterrupted(void) {
-	return int_detected;
-}
+int scs_is_interrupted(void) { return int_detected; }
 
 #endif /* END IF MATLAB_MEX_FILE / WIN32 */
 
 #endif /* END IF CTRLC > 0 */
-typedef int ISO_C_forbids_empty_translation_it;
