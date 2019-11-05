@@ -13,7 +13,7 @@ extern "C" {
 
 /* SCS VERSION NUMBER ----------------------------------------------    */
 #define SCS_VERSION \
-  ("2.0.2") /* string literals automatically null-terminated */
+  ("2.1.1") /* string literals automatically null-terminated */
 
 /* SCS returns one of the following integers:                           */
 #define SCS_INFEASIBLE_INACCURATE (-7)
@@ -37,7 +37,8 @@ extern "C" {
 #define VERBOSE (1)
 #define NORMALIZE (1)
 #define WARM_START (0)
-#define ACCELERATION_LOOKBACK (20)
+#define ACCELERATION_LOOKBACK (10)
+#define WRITE_DATA_FILENAME (0)
 
 /* redefine printfs and memory allocators as needed */
 #ifdef MATLAB_MEX_FILE
@@ -56,6 +57,7 @@ extern "C" {
     PySys_WriteStdout(__VA_ARGS__);                  \
     PyGILState_Release(gilstate);                    \
   }
+#define _scs_printf printf
 #define _scs_free free
 #define _scs_malloc malloc
 #define _scs_calloc calloc
@@ -79,6 +81,11 @@ extern "C" {
 #define _scs_realloc realloc
 #endif
 
+/* Only required for SuiteSparse compatibility: */
+#ifndef _scs_printf
+#define _scs_printf scs_printf
+#endif
+
 #define scs_free(x) \
   _scs_free(x);     \
   x = SCS_NULL
@@ -88,10 +95,9 @@ extern "C" {
 
 #ifdef DLONG
 #ifdef _WIN64
-/* getting strange signed / unsigned errors here, just use long */
-typedef long scs_int;
 /* #include <stdint.h> */
-/* typedef int64_t blas_int; */
+/* typedef int64_t scs_int; */
+typedef long scs_int;
 #else
 typedef long scs_int;
 #endif
