@@ -1,4 +1,4 @@
-d8b7881ffd0a629cbda85c67f7d53bc0 *DESCRIPTION
+e00afc3833348b290bcc23d267efccfe *DESCRIPTION
 745b06e18e3e2d66f73ffeeffeb4cbbc *NAMESPACE
 1915d31279b564e436248a83e8316a52 *NEWS.md
 677ecbe876f0871cf9492f12e5c7826e *R/scs.R
@@ -141,7 +141,7 @@ b0025a82546e9c6b2e0d8d38762bfa02 *src/scs_mods/README.md
 29893515a331c5a51e261c24445be1e8 *src/scs_mods/rw.c
 d0e19c9e10c82c62d831fb4536ac7d94 *src/scs_mods/scs.mk
 bf13aa83393e29a42125f1ab1bac3702 *src/scsr.c
-6cf4adc1732633562c665033d99c9613 *tests/testthat.R
+bbd5b5f072d6af3f23348f2b268496cf *tests/testthat.R
 164834b7539842b7afbb7f52b1e7e9eb *tests/testthat/problem_results/README.md
 3852ccc49c135327ede2b05d4422b661 *tests/testthat/problem_results/degenerate1.RDS
 c92bd039c7dc54143192d4c29026e306 *tests/testthat/problem_results/degenerate2.RDS
@@ -159,9 +159,7 @@ c6540c7fd2d67f2a3fb40c4f7efedf8e *tests/testthat/problem_results/random_prob.RDS
 18d50f8e5d69615b08f65ae693cd5b6c *tests/testthat/problem_results/small_lp.RDS
 f48ab1e892751dface62b84c02844ed0 *tests/testthat/problem_results/unbounded_tiny_qp.RDS
 de0e296b7c676373a48fa924210ce55a *tests/testthat/test_example.R
-b7aaedbbd5d1c6dff728a089d5c6d1ec *tests/testthat/test_problems.R
 bc657ae766fd22950712525ffbe80d38 *tests/testthat/test_psd.R
 c9b0818f7a97b13bbca4290d60c124b8 *tests/testthat/test_random_lp.R
 cfe2ced86152077eb888db25f3953cdc *tests/testthat/test_socp.R
-3863019f7f9610aac614b83317f9c952 *tests/testthat/test_sparse_utils.R
 a74ad1759bc4c92843af82b4ba69224f *tests/testthat/test_tiny.R
