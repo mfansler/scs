@@ -5,7 +5,7 @@
 #include "scs_matrix.h"
 
 /* return milli-seconds */
-#if (defined NOTIMER)
+#if (defined NO_TIMER)
 
 void SCS(tic)(SCS(timer) * t) {
 }
@@ -71,7 +71,41 @@ scs_float SCS(tocq)(SCS(timer) * t) {
 
 #endif
 
-void SCS(free_data)(ScsData *d, ScsCone *k, ScsSettings *stgs) {
+void SCS(deep_copy_data)(ScsData *dest, const ScsData *src) {
+  dest->n = src->n;
+  dest->m = src->m;
+  SCS(copy_matrix)(&(dest->A), src->A);
+  SCS(copy_matrix)(&(dest->P), src->P);
+  dest->b = (scs_float *)scs_calloc(dest->m, sizeof(scs_float));
+  memcpy(dest->b, src->b, dest->m * sizeof(scs_float));
+  dest->c = (scs_float *)scs_calloc(dest->n, sizeof(scs_float));
+  memcpy(dest->c, src->c, dest->n * sizeof(scs_float));
+}
+
+void SCS(deep_copy_stgs)(ScsSettings *dest, const ScsSettings *src) {
+  memcpy(dest, src, sizeof(ScsSettings));
+  /* MATLAB does something weird with strdup, so use strcpy instead */
+  char *tmp;
+  if (src->write_data_filename) {
+    /* sizeof(char) = 1 */
+    tmp = (char *)scs_malloc(strlen(src->write_data_filename) + 1);
+    strcpy(tmp, src->write_data_filename);
+    dest->write_data_filename = tmp;
+  } else {
+    dest->write_data_filename = SCS_NULL;
+  }
+  /* MATLAB does something weird with strdup, so use strcpy instead */
+  if (src->log_csv_filename) {
+    /* sizeof(char) = 1 */
+    tmp = (char *)scs_malloc(strlen(src->log_csv_filename) + 1);
+    strcpy(tmp, src->log_csv_filename);
+    dest->log_csv_filename = tmp;
+  } else {
+    dest->log_csv_filename = SCS_NULL;
+  }
+}
+
+void SCS(free_data)(ScsData *d) {
   if (d) {
     scs_free(d->b);
     scs_free(d->c);
@@ -82,17 +116,6 @@ void SCS(free_data)(ScsData *d, ScsCone *k, ScsSettings *stgs) {
       SCS(free_scs_matrix)(d->P);
     }
     scs_free(d);
-  }
-  if (k) {
-    scs_free(k->bu);
-    scs_free(k->bl);
-    scs_free(k->q);
-    scs_free(k->s);
-    scs_free(k->p);
-    scs_free(k);
-  }
-  if (stgs) {
-    scs_free(stgs);
   }
 }
 
@@ -106,7 +129,7 @@ void SCS(free_sol)(ScsSolution *sol) {
 }
 
 /* assumes stgs already allocated memory */
-void SCS(set_default_settings)(ScsSettings *stgs) {
+void scs_set_default_settings(ScsSettings *stgs) {
   /* These constants are defined in include/glbopts.h */
   stgs->max_iters = MAX_ITERS;
   stgs->eps_abs = EPS_ABS;

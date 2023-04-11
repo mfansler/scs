@@ -17,7 +17,7 @@ The cone :math:`\mathcal{K}` can be any Cartesian product of the following primi
      - :math:`\{s \mid s = 0 \}`
      - :code:`z` length of cone.
      - :code:`z`
-   * - Positive orthant
+   * - Positive (or linear) cone
      - :math:`\{s \mid s \geq 0 \}`
      - :code:`l` length of cone.
      - :code:`l`
@@ -56,6 +56,14 @@ The rows of the data matrix :math:`A` correspond to the cones in
 :math:`\mathcal{K}`. The rows of :math:`A` **must be in the order of the cones
 given above**, i.e., first come the rows that correspond to the zero cones, then
 those that correspond to the positive orthants, then the box cone, etc.
+
+Within a cone the rows should be ordered to agree with the mathematical
+description of the cone as given above. For instance, the box cone is defined
+as :math:`\{(t, s) \in \mathbf{R} \times \mathbf{R}^k \mid t l \leq s \leq t u
+\}` and consequently the variable vector is stacked as :code:`[t;s]`, ie,
+:code:`t` comes first then :code:`s`. Similarly, the exponential cone is
+defined as :math:`\{   (x,y,z) \in \mathbf{R}^3 \mid y e^{x/y} \leq z, y>0  \}`
+and therefore the variable vector is stacked as :code:`[x, y, z]`, etc.
 
 .. _sdcone:
 
@@ -121,8 +129,9 @@ So the cone definition that SCS uses is
 Example
 ^^^^^^^
 
-Consider the symmetric positive semidefinite cone constraint over variables
-:math:`x \in \mathbf{R}^n` and :math:`S \in \mathbf{R}^{k \times k}`
+For a concrete example in python see :ref:`py_mat_completion`.
+Here we consider the symmetric positive semidefinite cone constraint over
+variables :math:`x \in \mathbf{R}^n` and :math:`S \in \mathbf{R}^{k \times k}`
 
 .. math::
     B - \sum_{i=1}^n \mathcal{A}_i x_i = S \succeq 0

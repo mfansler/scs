@@ -1,6 +1,7 @@
 #include "glbopts.h"
 #include "linalg.h"
 #include "minunit.h"
+#include "problem_utils.h"
 #include "rw.h"
 #include "scs.h"
 #include "scs_matrix.h"
@@ -15,7 +16,7 @@ static const char *hs21_tiny_qp_rw(void) {
   ScsInfo info = {0};
   scs_int exitflag;
   scs_float perr, derr;
-  scs_int success;
+  scs_int success, read_status;
   const char *fail;
 
   /* data */
@@ -66,10 +67,10 @@ static const char *hs21_tiny_qp_rw(void) {
   k->bl = bl;
   k->bu = bu;
 
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
   stgs->eps_abs = 1e-6;
   stgs->eps_rel = 1e-6;
-  stgs->eps_infeas = 1e-9;
+  stgs->eps_infeas = 0.; /* disable due to gpu test finding cert */
 
   stgs->write_data_filename = "hs21_tiny_qp";
   stgs->max_iters = 1;
@@ -83,7 +84,12 @@ static const char *hs21_tiny_qp_rw(void) {
   scs_free(stgs);
   scs_free(d);
 
-  SCS(read_data)("hs21_tiny_qp", &d, &k, &stgs);
+  read_status = SCS(read_data)("hs21_tiny_qp", &d, &k, &stgs);
+
+  if (read_status < 0) {
+    return "Data read failure, exit.\n";
+  }
+
   stgs->max_iters = 1000;
   /* solve with read data */
   exitflag = scs(d, k, stgs, sol, &info);
@@ -110,7 +116,10 @@ static const char *hs21_tiny_qp_rw(void) {
   mu_assert("hs21_tiny_qp: SCS failed to produce outputflag SCS_SOLVED",
             success);
 
+  SCS(free_data)(d);
+  SCS(free_cone)(k);
   SCS(free_sol)(sol);
-  SCS(free_data)(d, k, stgs);
+  scs_free(stgs);
+
   return fail;
 }

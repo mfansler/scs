@@ -27,7 +27,7 @@ static const char *test_validation(void) {
   d->m = m;
   d->n = n;
   gen_random_prob_data(nnz, col_nnz, d, k, opt_sol, seed);
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
 
   /* TODO test more failure modes */
   stgs->eps_abs = -1;
@@ -36,8 +36,11 @@ static const char *test_validation(void) {
 
   mu_assert("test_fails: SCS failed to produce outputflag SCS_FAILED",
             exitflag == SCS_FAILED);
-  SCS(free_data)(d, k, stgs);
+  SCS(free_data)(d);
+  SCS(free_cone)(k);
   SCS(free_sol)(sol);
   SCS(free_sol)(opt_sol);
+  scs_free(stgs);
+
   return 0;
 }

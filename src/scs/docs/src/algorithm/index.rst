@@ -48,7 +48,7 @@ The second step is the Euclidean projection onto a convex :ref:`cone <cones>`, i
   \mbox{subject to } & z \in \mathcal{K}
   \end{array}
 
-over variable :math:`z`. Most cone projection operators have relatively simple
+over variable :math:`z`. Many cones of interest have relatively simple
 projection operators.
 
 .. _optimality:
@@ -92,7 +92,7 @@ for :math:`(x,y,s)` that satisfy the KKT conditions we have
 .. _infeasibility:
 
 Certificate of infeasibility
-----------------------------
+++++++++++++++++++++++++++++
 
 On the other hand, if no optimal solution exists then SCS is able to robustly detect primal or dual infeasibility.
 Any :math:`y \in \mathbf{R}^m` that satisfies
@@ -133,7 +133,7 @@ found :math:`x \in \mathbf{R}^n`, :math:`s \in \mathbf{R}^m`, and :math:`y \in
 * Dual residual:
 
 .. math::
-  r_d := \|Px + A^\top y - c \|_\infty \leq \epsilon_\mathrm{abs} + \epsilon_\mathrm{rel} \max(\|Px\|_\infty, \|A^\top y\|_\infty, \|c\|_\infty)
+  r_d := \|Px + A^\top y + c \|_\infty \leq \epsilon_\mathrm{abs} + \epsilon_\mathrm{rel} \max(\|Px\|_\infty, \|A^\top y\|_\infty, \|c\|_\infty)
 
 * Duality gap:
 

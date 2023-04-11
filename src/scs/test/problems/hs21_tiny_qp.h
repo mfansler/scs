@@ -1,6 +1,7 @@
 #include "glbopts.h"
 #include "linalg.h"
 #include "minunit.h"
+#include "problem_utils.h"
 #include "scs.h"
 #include "scs_matrix.h"
 #include "util.h"
@@ -64,10 +65,10 @@ static const char *hs21_tiny_qp(void) {
   k->bl = bl;
   k->bu = bu;
 
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
   stgs->eps_abs = 1e-6;
   stgs->eps_rel = 1e-6;
-  stgs->eps_infeas = 1e-9;
+  stgs->eps_infeas = 0.; /* disable due to gpu test finding cert */
 
   exitflag = scs(d, k, stgs, sol, &info);
 

@@ -1,7 +1,7 @@
 # MAKEFILE for scs
 include scs.mk
 
-SCS_OBJECTS = src/util.o src/cones.o src/aa.o src/rw.o src/linalg.o src/ctrlc.o src/scs_version.o src/normalize.o
+SCS_OBJECTS = src/util.o src/cones.o src/exp_cone.o src/aa.o src/rw.o src/linalg.o src/ctrlc.o src/scs_version.o src/normalize.o
 SCS_O = src/scs.o
 SCS_INDIR_O = src/scs_indir.o
 
@@ -19,7 +19,7 @@ TARGETS = $(OUT)/demo_socp_indirect $(OUT)/demo_socp_direct $(OUT)/run_from_file
 default: $(TARGETS) $(OUT)/libscsdir.a $(OUT)/libscsindir.a $(OUT)/libscsdir.$(SHARED) $(OUT)/libscsindir.$(SHARED)
 	@echo "****************************************************************************************"
 	@echo "Successfully compiled scs, copyright Brendan O'Donoghue 2012."
-	@echo "To test, type '$(OUT)/demo_socp_direct' to solve a random SOCP."
+	@echo "To test, run 'make test' and then '$(OUT)/run_tests_direct'."
 	@echo "**********************************************************************************"
 ifneq ($(USE_LAPACK), 0)
 	@echo "Compiled with blas and lapack, can solve LPs, SOCPs, SDPs, ECPs, and PCPs"
@@ -39,16 +39,18 @@ $(SCS_INDIR_O): src/scs.c $(INC_FILES)
 %.o : src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-src/util.o	: src/util.c include/util.h include/glbopts.h
-src/cones.o	: src/cones.c include/cones.h include/scs_blas.h
-src/aa.o	: src/aa.c include/aa.h include/scs_blas.h
-src/rw.o	: src/rw.c include/rw.h
-src/linalg.o: src/linalg.c include/linalg.h
-src/ctrl.o  : src/ctrl.c include/ctrl.h
-src/scs_version.o: src/scs_version.c include/glbopts.h
+src/util.o	: src/util.c $(INC_FILES)
+src/cones.o	: src/cones.c $(INC_FILES)
+src/exp_cone.o	: src/exp_cone.c $(INC_FILES)
+src/aa.o	: src/aa.c $(INC_FILES)
+src/rw.o	: src/rw.c $(INC_FILES)
+src/linalg.o: src/linalg.c $(INC_FILES)
+src/ctrl.o  : src/ctrl.c $(INC_FILES)
+src/scs_version.o: src/scs_version.c $(INC_FILES)
 
 $(DIRSRC)/private.o: $(DIRSRC)/private.c  $(DIRSRC)/private.h
 $(INDIRSRC)/indirect/private.o: $(INDIRSRC)/private.c $(INDIRSRC)/private.h
+$(MKLSRC)/private.o: $(MKLSRC)/private.c  $(MKLSRC)/private.h
 $(LINSYS)/scs_matrix.o: $(LINSYS)/scs_matrix.c $(LINSYS)/scs_matrix.h
 $(LINSYS)/csparse.o: $(LINSYS)/csparse.c $(LINSYS)/csparse.h
 
@@ -62,45 +64,68 @@ $(OUT)/libscsindir.a: $(SCS_INDIR_O) $(SCS_OBJECTS) $(INDIRSRC)/private.o $(LINS
 	$(ARCHIVE) $@ $^
 	- $(RANLIB) $@
 
+$(OUT)/libscsmkl.a: $(SCS_O) $(SCS_OBJECTS) $(MKLSRC)/private.o $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o
+	mkdir -p $(OUT)
+	$(ARCHIVE) $@ $^
+	- $(RANLIB) $@
+
 $(OUT)/libscsdir.$(SHARED): $(SCS_O) $(SCS_OBJECTS) $(DIRSRC)/private.o $(AMD_OBJS) $(LDL_OBJS) $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o
 	mkdir -p $(OUT)
-	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
 
 $(OUT)/libscsindir.$(SHARED): $(SCS_INDIR_O) $(SCS_OBJECTS) $(INDIRSRC)/private.o $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o
 	mkdir -p $(OUT)
-	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
+
+$(OUT)/libscsmkl.$(SHARED): $(SCS_O) $(SCS_OBJECTS) $(MKLSRC)/private.o $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o
+	mkdir -p $(OUT)
+	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(MKLFLAGS)
 
 $(OUT)/demo_socp_direct: test/random_socp_prob.c $(OUT)/libscsdir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
 
 $(OUT)/demo_socp_indirect: test/random_socp_prob.c $(OUT)/libscsindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
+
+$(OUT)/demo_socp_mkl: test/random_socp_prob.c $(OUT)/libscsmkl.a
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(MKLFLAGS)
 
 $(OUT)/run_from_file_direct: test/run_from_file.c $(OUT)/libscsdir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
 
 $(OUT)/run_from_file_indirect: test/run_from_file.c $(OUT)/libscsindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS)
 
 $(OUT)/run_from_file_gpu_indirect: test/run_from_file.c $(OUT)/libscsgpuindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(CULDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS)
 
 # basic testing
 .PHONY: test
 test: $(OUT)/run_tests_indirect $(OUT)/run_tests_direct
 $(OUT)/run_tests_indirect: test/run_tests.c $(OUT)/libscsindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -Itest
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) -Itest
 $(OUT)/run_tests_direct: test/run_tests.c $(OUT)/libscsdir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) -Itest
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) -Itest
+$(OUT)/run_tests_mkl: test/run_tests.c $(OUT)/libscsmkl.a
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(MKLFLAGS) -Itest
+
 
 .PHONY: test_gpu
 test_gpu: $(OUT)/run_tests_gpu_indirect # $(OUT)/run_tests_gpu_direct
 
+.PHONY: mkl
+mkl: mklroot $(OUT)/libscsmkl.a $(OUT)/libscsmkl.$(SHARED) $(OUT)/run_tests_mkl $(OUT)/demo_socp_mkl
+mklroot:
+ifndef MKLROOT
+	$(error MKLROOT is undefined, set MKLROOT to the MKL install location)
+endif
+
+
 $(OUT)/run_tests_gpu_indirect: test/run_tests.c $(OUT)/libscsgpuindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(CULDFLAGS) -Itest
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS) -Itest
 
 # $(OUT)/run_tests_gpu_direct: test/run_tests.c $(OUT)/libscsgpudir.a
-# 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(CULDFLAGS) -Itest
+# 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS) -Itest
 
 # REQUIRES GPU AND CUDA INSTALLED
 gpu: gpu_indirect # gpu_direct
@@ -115,11 +140,11 @@ $(LINSYS)/gpu/gpu.o: $(LINSYS)/gpu/gpu.c
 # 	$(CUCC) -c -o $(GPUDIR)/private.o $^ $(CUDAFLAGS)
 
 $(GPUINDIR)/private.o: $(GPUINDIR)/private.c
-	$(CUCC) -c -o $(GPUINDIR)/private.o $^ $(CUDAFLAGS)
+	$(CUCC) -c -o $@ $^ $(CUDAFLAGS)
 
 # $(OUT)/libscsgpudir.$(SHARED): $(SCS_O) $(SCS_OBJECTS) $(GPUDIR)/private.o $(AMD_OBJS) $(LINSYS)/scs_matrix.o $(LINSYS)/gpu/gpu.o
 #	 mkdir -p $(OUT)
-# 	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(CULDFLAGS)
+# 	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS)
 
 # $(OUT)/libscsgpudir.a: $(SCS_INDIR_O) $(SCS_OBJECTS) $(GPUDIR)/private.o $(AMD_OBJS) $(LINSYS)/scs_matrix.o $(LINSYS)/gpu/gpu.o
 #  	mkdir -p $(OUT)
@@ -128,7 +153,7 @@ $(GPUINDIR)/private.o: $(GPUINDIR)/private.c
 
 $(OUT)/libscsgpuindir.$(SHARED): $(SCS_O) $(SCS_OBJECTS) $(GPUINDIR)/private.o $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o $(LINSYS)/gpu/gpu.o
 	mkdir -p $(OUT)
-	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(CULDFLAGS)
+	$(CC) $(CFLAGS) -shared -Wl,$(SONAME),$(@:$(OUT)/%=%) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS)
 
 $(OUT)/libscsgpuindir.a: $(SCS_INDIR_O) $(SCS_OBJECTS) $(GPUINDIR)/private.o $(LINSYS)/scs_matrix.o $(LINSYS)/csparse.o $(LINSYS)/gpu/gpu.o
 	mkdir -p $(OUT)
@@ -136,14 +161,14 @@ $(OUT)/libscsgpuindir.a: $(SCS_INDIR_O) $(SCS_OBJECTS) $(GPUINDIR)/private.o $(L
 	- $(RANLIB) $@
 
 # $(OUT)/demo_socp_gpu_direct: test/random_socp_prob.c $(OUT)/libscsgpudir.a
-# 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(CULDFLAGS)
+# 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS)
 
 $(OUT)/demo_socp_gpu_indirect: test/random_socp_prob.c $(OUT)/libscsgpuindir.a
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(CULDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(BLASLDFLAGS) $(CULDFLAGS)
 
 .PHONY: clean purge
 clean:
-	@rm -rf $(TARGETS) $(SCS_O) $(SCS_INDIR_O) $(SCS_OBJECTS) $(AMD_OBJS) $(LDL_OBJS) $(LINSYS)/*.o $(DIRSRC)/*.o $(INDIRSRC)/*.o $(GPUDIR)/*.o $(GPUINDIR)/*.o
+	@rm -rf $(TARGETS) $(SCS_O) $(SCS_INDIR_O) $(SCS_OBJECTS) $(AMD_OBJS) $(LDL_OBJS) $(LINSYS)/*.o $(DIRSRC)/*.o $(INDIRSRC)/*.o $(MKLSRC)/*.o $(GPUDIR)/*.o $(GPUINDIR)/*.o $(LINSYS)/gpu/*.o
 	@rm -rf $(OUT)/*.dSYM
 	@rm -rf matlab/*.mex*
 	@rm -rf .idea

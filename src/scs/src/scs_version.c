@@ -1,11 +1,13 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "glbopts.h"
 
-const char *SCS(version)(void) {
+const char *scs_version(void) {
   return SCS_VERSION;
 }
-size_t SCS(sizeof_int)(void) {
-  return sizeof(scs_int);
+
+#ifdef __cplusplus
 }
-size_t SCS(sizeof_float)(void) {
-  return sizeof(scs_float);
-}
+#endif

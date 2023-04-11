@@ -1,6 +1,7 @@
 #include "glbopts.h"
 #include "linalg.h"
 #include "minunit.h"
+#include "problem_utils.h"
 #include "scs.h"
 #include "scs_matrix.h"
 #include "util.h"
@@ -60,7 +61,7 @@ static const char *unbounded_tiny_qp(void) {
 
   k->l = l;
 
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
   stgs->eps_abs = 1e-6;
   stgs->eps_rel = 1e-6;
   stgs->eps_infeas = 1e-7;
@@ -73,10 +74,9 @@ static const char *unbounded_tiny_qp(void) {
   fail = verify_solution_correct(d, k, stgs, &info, sol, exitflag);
 
   SCS(free_sol)(sol);
-  scs_free(d->A);
-  scs_free(d->P);
-  scs_free(k);
+  SCS(free_cone)(k);
   scs_free(stgs);
+  scs_free(d->A);
   scs_free(d);
   return fail;
 }

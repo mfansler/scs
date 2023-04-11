@@ -5,11 +5,13 @@
 extern "C" {
 #endif
 
+#include "csparse.h"
 #include "glbopts.h"
 #include "linalg.h"
-#include "scs.h"
+#include "linsys.h"
 #include "scs_matrix.h"
-#include <math.h>
+#include "util.h" /* timer */
+#include <string.h>
 
 struct SCS_LIN_SYS_WORK {
   scs_int n, m; /* linear system dimensions */
@@ -25,8 +27,7 @@ struct SCS_LIN_SYS_WORK {
   scs_float *M;
   /* reporting */
   scs_int tot_cg_its;
-  scs_float *rho_y_vec;
-  scs_float rho_x;
+  const scs_float *diag_r;
 };
 
 #ifdef __cplusplus

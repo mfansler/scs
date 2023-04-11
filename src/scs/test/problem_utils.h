@@ -41,8 +41,8 @@ void gen_random_prob_data(scs_int nnz, scs_int col_nnz, ScsData *d, ScsCone *k,
   for (i = 0; i < m; i++) {
     y[i] = z[i] = rand_scs_float();
   }
-  tmp_cone_work = SCS(init_cone)(k, SCS_NULL, m);
-  SCS(proj_dual_cone)(y, k, tmp_cone_work, 0);
+  tmp_cone_work = SCS(init_cone)(k, m);
+  SCS(proj_dual_cone)(y, tmp_cone_work, SCS_NULL, SCS_NULL);
   SCS(finish_cone(tmp_cone_work));
 
   for (i = 0; i < m; i++) {
@@ -78,25 +78,25 @@ void gen_random_prob_data(scs_int nnz, scs_int col_nnz, ScsData *d, ScsCone *k,
   scs_free(z);
 }
 
-static scs_float get_dual_cone_dist(const scs_float *y, const ScsCone *k,
-                                    ScsConeWork *c, scs_int m) {
+static scs_float get_dual_cone_dist(const scs_float *y, ScsConeWork *c,
+                                    scs_int m) {
   scs_float dist;
   scs_float *t = (scs_float *)scs_calloc(m, sizeof(scs_float));
   memcpy(t, y, m * sizeof(scs_float));
-  SCS(proj_dual_cone)(t, k, c, 0);
+  SCS(proj_dual_cone)(t, c, SCS_NULL, SCS_NULL);
   dist = SCS(norm_inf_diff)(t, y, m);
   scs_free(t);
   return dist;
 }
 
 /* via moreau */
-static scs_float get_pri_cone_dist(const scs_float *s, const ScsCone *k,
-                                   ScsConeWork *c, scs_int m) {
+static scs_float get_pri_cone_dist(const scs_float *s, ScsConeWork *c,
+                                   scs_int m) {
   scs_float dist;
   scs_float *t = (scs_float *)scs_calloc(m, sizeof(scs_float));
   memcpy(t, s, m * sizeof(scs_float));
   SCS(scale_array)(t, -1.0, m);
-  SCS(proj_dual_cone)(t, k, c, 0);
+  SCS(proj_dual_cone)(t, c, SCS_NULL, SCS_NULL);
   dist = SCS(norm_inf)(t, m); /* ||s - Pi_c(s)|| = ||Pi_c*(-s)|| */
   scs_free(t);
   return dist;
@@ -113,11 +113,11 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
   scs_float *c = d->c;
   scs_float *b = d->b;
 
-  scs_float *primal = scs_calloc(m, sizeof(scs_float));
-  scs_float *ax = scs_calloc(m, sizeof(scs_float));
-  scs_float *dual = scs_calloc(n, sizeof(scs_float));
-  scs_float *px = scs_calloc(n, sizeof(scs_float));
-  scs_float *aty = scs_calloc(n, sizeof(scs_float));
+  scs_float *primal = (scs_float *)scs_calloc(m, sizeof(scs_float));
+  scs_float *ax = (scs_float *)scs_calloc(m, sizeof(scs_float));
+  scs_float *dual = (scs_float *)scs_calloc(n, sizeof(scs_float));
+  scs_float *px = (scs_float *)scs_calloc(n, sizeof(scs_float));
+  scs_float *aty = (scs_float *)scs_calloc(n, sizeof(scs_float));
 
   scs_float res_pri, res_dual, res_infeas, res_unbdd_a, res_unbdd_p;
   scs_float ctx, bty, xt_p_x, gap, pobj, dobj, sty;
@@ -125,7 +125,7 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
 
   scs_float sdist = NAN, ydist = NAN;
 
-  ScsConeWork *cone_work = SCS(init_cone)(k, SCS_NULL, m);
+  ScsConeWork *cone_work = SCS(init_cone)(k, m);
 
   /**************** PRIMAL *********************/
   memset(ax, 0, m * sizeof(scs_float));
@@ -172,10 +172,10 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
   /**************** CONES *****************/
 
   if (status == SCS_SOLVED || status == SCS_UNBOUNDED) {
-    sdist = get_pri_cone_dist(sol->s, k, cone_work, m);
+    sdist = get_pri_cone_dist(sol->s, cone_work, m);
   }
   if (status == SCS_SOLVED || status == SCS_INFEASIBLE) {
-    ydist = get_dual_cone_dist(sol->y, k, cone_work, m);
+    ydist = get_dual_cone_dist(sol->y, cone_work, m);
   }
 
   /**************** OTHERS *****************/
@@ -190,6 +190,7 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
 
   /************** OPTIMALITY ****************/
 
+  /* TODO: the MAX expansion computes these norms many times */
   grl = MAX(MAX(ABS(xt_p_x), ABS(ctx)), ABS(bty));
   prl = MAX(MAX(NORM(b, m), NORM(s, m)), NORM(ax, m));
   drl = MAX(MAX(NORM(c, n), NORM(px, n)), NORM(aty, n));
@@ -205,18 +206,17 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
   /**************** ASSERTS *****************/
   if (status == SCS_SOLVED) {
     mu_assert_less("Primal residual ERROR", ABS(res_pri - info->res_pri),
-                   1e-11);
+                   1e-10);
     mu_assert_less("Dual residual ERROR", ABS(res_dual - info->res_dual),
-                   1e-11);
-    mu_assert_less("Gap ERROR", ABS(gap - info->gap), 1e-8 * (1 + ABS(gap)));
+                   1e-10);
+    mu_assert_less("Gap ERROR", ABS(gap - info->gap), 1e-7 * (1 + ABS(gap)));
     mu_assert_less("Primal obj ERROR", ABS(pobj - info->pobj),
                    1e-9 * (1 + ABS(pobj)));
     mu_assert_less("Dual obj ERROR", ABS(dobj - info->dobj),
                    1e-9 * (1 + ABS(dobj)));
-
     /* slightly looser tol */
     mu_assert_less("Complementary slackness ERROR", ABS(sty),
-                   1e-8 * MAX(NORM(s, m), NORM(y, m)));
+                   5e-8 * MAX(NORM(s, m), NORM(y, m)));
     mu_assert_less("s cone dist ERROR", ABS(sdist), 1e-5);
     mu_assert_less("y cone dist ERROR", ABS(ydist), 1e-5);
 
@@ -225,7 +225,6 @@ const char *verify_solution_correct(ScsData *d, ScsCone *k, ScsSettings *stgs,
     mu_assert_less("Dual feas ERROR", res_dual,
                    stgs->eps_abs + stgs->eps_rel * drl);
     mu_assert_less("Gap feas ERROR", gap, stgs->eps_abs + stgs->eps_rel * grl);
-
 
   } else if (status == SCS_INFEASIBLE) {
     mu_assert_less("Infeas ERROR", ABS(res_infeas - info->res_infeas), 1e-8);

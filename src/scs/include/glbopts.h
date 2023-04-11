@@ -5,34 +5,24 @@
 extern "C" {
 #endif
 
+#include "scs.h"
 #include <math.h>
 
 #ifndef SCS
-#define SCS(x) scs_##x
+#define SCS(x) _scs_##x
 #endif
 
-/* SCS VERSION NUMBER ----------------------------------------------    */
-#define SCS_VERSION                                                            \
-  ("3.0.0") /* string literals automatically null-terminated */
-
-/* SCS returns one of the following integers:                           */
-#define SCS_INFEASIBLE_INACCURATE (-7)
-#define SCS_UNBOUNDED_INACCURATE (-6)
-#define SCS_SIGINT (-5)
-#define SCS_FAILED (-4)
-#define SCS_INDETERMINATE (-3)
-#define SCS_INFEASIBLE (-2) /* primal infeasible, dual unbounded   */
-#define SCS_UNBOUNDED (-1)  /* primal unbounded, dual infeasible   */
-#define SCS_UNFINISHED (0)  /* never returned, used as placeholder */
-#define SCS_SOLVED (1)
-#define SCS_SOLVED_INACCURATE (2)
+/* SCS VERSION NUMBER ----------------------------------------------     */
+/* string literals automatically null-terminated */
+#define SCS_VERSION ("3.2.3")
 
 /* verbosity level */
 #ifndef VERBOSITY
 #define VERBOSITY (0)
 #endif
 
-/* DEFAULT SOLVER PARAMETERS AND SETTINGS --------------------------    */
+/* DEFAULT SOLVER PARAMETERS AND SETTINGS --------------------------     */
+/* If you update any of these you must update the documentation manually */
 #define MAX_ITERS (100000)
 #define EPS_REL (1E-4)
 #define EPS_ABS (1E-4)
@@ -50,85 +40,77 @@ extern "C" {
 #define LOG_CSV_FILENAME (0)
 #define TIME_LIMIT_SECS (0.)
 
-/* redefine printfs and memory allocators as needed */
+/* redefine printfs as needed */
+#if NO_PRINTING > 0     /* Disable all printing */
+#define scs_printf(...) /* No-op */
+#else
 #ifdef MATLAB_MEX_FILE
 #include "mex.h"
 #define scs_printf mexPrintf
-#define _scs_free mxFree
-#define _scs_malloc mxMalloc
-#define _scs_calloc mxCalloc
-#define _scs_realloc mxRealloc
 #elif defined PYTHON
 #include <Python.h>
+/* see:
+ * https://cython-users.narkive.com/jRjjs3sK/reacquire-gil-for-printing-in-wrapped-c-library
+ */
 #define scs_printf(...)                                                        \
   {                                                                            \
     PyGILState_STATE gilstate = PyGILState_Ensure();                           \
     PySys_WriteStdout(__VA_ARGS__);                                            \
     PyGILState_Release(gilstate);                                              \
   }
-/* only for SuiteSparse */
-#define _scs_printf PySys_WriteStdout
-#if PY_MAJOR_VERSION >= 3
-#define _scs_free PyMem_RawFree
-#define _scs_malloc PyMem_RawMalloc
-#define _scs_realloc PyMem_RawRealloc
-#define _scs_calloc PyMem_RawCalloc
+#elif defined R_LANG
+#include <R_ext/Print.h> /* Rprintf etc */
+#include <stdio.h>
+#include <stdlib.h>
+#define scs_printf Rprintf
 #else
-#define _scs_free PyMem_Free
-#define _scs_malloc PyMem_Malloc
-#define _scs_realloc PyMem_Realloc
-static inline void *_scs_calloc(size_t count, size_t size) {
+#include <stdio.h>
+#include <stdlib.h>
+#define scs_printf printf
+#endif
+#endif
+
+/* redefine memory allocators as needed */
+#ifdef MATLAB_MEX_FILE
+#include "mex.h"
+#define scs_free mxFree
+#define scs_malloc mxMalloc
+#define scs_calloc mxCalloc
+#define scs_realloc mxRealloc
+#elif defined PYTHON
+#include <Python.h>
+#if PY_MAJOR_VERSION >= 3
+#define scs_free PyMem_RawFree
+#define scs_malloc PyMem_RawMalloc
+#define scs_realloc PyMem_RawRealloc
+#define scs_calloc PyMem_RawCalloc
+#else
+#define scs_free PyMem_Free
+#define scs_malloc PyMem_Malloc
+#define scs_realloc PyMem_Realloc
+static inline void *scs_calloc(size_t count, size_t size) {
   void *obj = PyMem_Malloc(count * size);
   memset(obj, 0, count * size);
   return obj;
 }
 #endif
 #elif defined R_LANG
-#include <R_ext/Print.h> /* Rprintf etc */
 #include <stdio.h>
 #include <stdlib.h>
-#define scs_printf Rprintf
-#define _scs_free free
-#define _scs_malloc malloc
-#define _scs_calloc calloc
-#define _scs_realloc realloc
+#define scs_free free
+#define scs_malloc malloc
+#define scs_calloc calloc
+#define scs_realloc realloc
 #else
 #include <stdio.h>
 #include <stdlib.h>
-#define scs_printf printf
-#define _scs_free free
-#define _scs_malloc malloc
-#define _scs_calloc calloc
-#define _scs_realloc realloc
-#endif
-
-/* Only required for SuiteSparse compatibility: */
-#ifndef _scs_printf
-#define _scs_printf scs_printf
-#endif
-
-#define scs_free(x)                                                            \
-  _scs_free(x);                                                                \
-  x = SCS_NULL
-#define scs_malloc(x) _scs_malloc(x)
-#define scs_calloc(x, y) _scs_calloc(x, y)
-#define scs_realloc(x, y) _scs_realloc(x, y)
-
-#ifdef DLONG
-/*#ifdef _WIN64
-#include <stdint.h>
-typedef int64_t scs_int;
-#else
-typedef long scs_int;
-#endif
-*/
-typedef long long scs_int;
-#else
-typedef int scs_int;
+#define scs_free free
+#define scs_malloc malloc
+#define scs_calloc calloc
+#define scs_realloc realloc
 #endif
 
 #ifndef SFLOAT
-typedef double scs_float;
 #ifndef NAN
 #define NAN ((scs_float)0x7ff8000000000000)
 #endif
@@ -136,7 +118,6 @@ typedef double scs_float;
 #define INFINITY NAN
 #endif
 #else
-typedef float scs_float;
 #ifndef NAN
 #define NAN ((float)0x7fc00000)
 #endif
@@ -144,8 +125,6 @@ typedef float scs_float;
 #define INFINITY NAN
 #endif
 #endif
-
-#define SCS_NULL 0
 
 #ifndef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -183,8 +162,9 @@ typedef float scs_float;
 /* how many iterations between heuristic residual rescaling */
 #define RESCALING_MIN_ITERS (100)
 
-#define EPS_TOL (1E-18)
-#define SAFEDIV_POS(X, Y) ((Y) < EPS_TOL ? ((X) / EPS_TOL) : (X) / (Y))
+#define _DIV_EPS_TOL (1E-18)
+#define SAFEDIV_POS(X, Y)                                                      \
+  ((Y) < _DIV_EPS_TOL ? ((X) / _DIV_EPS_TOL) : (X) / (Y))
 
 #if VERBOSITY > 0
 #define PRINT_INTERVAL (1)

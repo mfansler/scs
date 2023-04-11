@@ -3,8 +3,7 @@
 Examples
 ===============
 
-Here we present a few simple examples of using SCS directly in different
-languages.
+Here we present a few simple examples of calling SCS from different languages.
 
 :ref:`C/C++ <c_example>`
 
@@ -16,6 +15,8 @@ languages.
 
 :ref:`R <r_example>`
 
+:ref:`Ruby <ruby_example>`
+
 .. toctree::
    :maxdepth: 2
    :hidden:
@@ -25,4 +26,5 @@ languages.
    matlab.rst
    julia.rst
    r.rst
+   ruby.rst
 

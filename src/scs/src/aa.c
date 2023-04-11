@@ -96,6 +96,10 @@ aa_float toc(const char *str, timer *t) {
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* BLAS functions used */
 aa_float BLAS(nrm2)(blas_int *n, aa_float *x, blas_int *incx);
 void BLAS(axpy)(blas_int *n, aa_float *a, const aa_float *x, blas_int *incx,
@@ -112,6 +116,10 @@ void BLAS(gemm)(const char *transa, const char *transb, blas_int *m,
                 aa_float *c, blas_int *ldc);
 void BLAS(scal)(const blas_int *n, const aa_float *a, aa_float *x,
                 const blas_int *incx);
+
+#ifdef __cplusplus
+}
+#endif
 
 /* This file uses Anderson acceleration to improve the convergence of
  * a fixed point mapping.
@@ -191,7 +199,6 @@ static void set_m(AaWork *a, aa_int len) {
     }
   }
   TIME_TOC
-  return;
 }
 
 /* initialize accel params, in particular x_prev, f_prev, g_prev */
@@ -270,23 +277,23 @@ static void update_accel_params(const aa_float *x, const aa_float *f, AaWork *a,
   a->norm_g = BLAS(nrm2)(&bdim, a->g, &one);
 
   TIME_TOC
-  return;
 }
 
 /* f = (1-relaxation) * \sum_i a_i x_i + relaxation * \sum_i a_i f_i */
 static void relax(aa_float *f, AaWork *a, aa_int len) {
   TIME_TIC
-  /* x_work = x - S * work */
+  /* x_work = x initially */
   blas_int bdim = (blas_int)(a->dim), one = 1, blen = (blas_int)len;
   aa_float onef = 1.0, neg_onef = -1.0;
   aa_float one_m_relaxation = 1. - a->relaxation;
+  /* x_work = x - S * work */
   BLAS(gemv)
   ("NoTrans", &bdim, &blen, &neg_onef, a->S, &bdim, a->work, &one, &onef,
    a->x_work, &one);
   /* f = relaxation * f */
-  BLAS(scal)(&blen, &a->relaxation, f, &one);
+  BLAS(scal)(&bdim, &a->relaxation, f, &one);
   /* f += (1 - relaxation) * x_work */
-  BLAS(axpy)(&blen, &one_m_relaxation, a->x_work, &one, f, &one);
+  BLAS(axpy)(&bdim, &one_m_relaxation, a->x_work, &one, f, &one);
   TIME_TOC
 }
 
@@ -352,7 +359,7 @@ AaWork *aa_init(aa_int dim, aa_int mem, aa_int type1, aa_float regularization,
   AaWork *a = (AaWork *)calloc(1, sizeof(AaWork));
   if (!a) {
     printf("Failed to allocate memory for AA.\n");
-    return (void *)0;
+    return (AaWork *)0;
   }
   a->type1 = type1;
   a->iter = 0;
@@ -484,7 +491,6 @@ void aa_finish(AaWork *a) {
     }
     free(a);
   }
-  return;
 }
 
 void aa_reset(AaWork *a) {
@@ -493,7 +499,6 @@ void aa_reset(AaWork *a) {
     printf("AA reset.\n");
   }
   a->iter = 0;
-  return;
 }
 
 #endif

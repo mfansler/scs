@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. image:: _static/scs_logo.png
+.. image:: _static/scs_logo_transparent.png
   :width: 400
   :alt: SCS
   :align: center
@@ -41,13 +41,13 @@ over variables
    :header-rows: 0
 
    * - :math:`x \in \mathbf{R}^n`
-     - primal variable 
-
-   * - :math:`s \in \mathbf{R}^m`
-     - slack variable 
+     - primal variable
 
    * - :math:`y \in \mathbf{R}^m`
-     - dual variable 
+     - dual variable
+
+   * - :math:`s \in \mathbf{R}^m`
+     - slack variable
 
 with data
 
@@ -56,20 +56,20 @@ with data
    :header-rows: 0
 
    * - :math:`A \in \mathbf{R}^{m \times n}`
-     - sparse data matrix
+     - sparse data matrix, see :ref:`matrices`
    * - :math:`P \in \mathbf{S}_+^{n}`
-     - sparse **symmetric positive semidefinite** matrix
+     - sparse, symmetric positive semidefinite matrix
    * - :math:`c \in \mathbf{R}^n`
-     - dense primal cost vector 
+     - dense primal cost vector
    * - :math:`b \in \mathbf{R}^m`
-     - dense dual cost vector 
+     - dense dual cost vector
    * - :math:`\mathcal{K} \subseteq \mathbf{R}^m`
      - nonempty, closed, convex cone, see :ref:`cones`
    * - :math:`\mathcal{K}^* \subseteq \mathbf{R}^m`
      - dual cone to :math:`\mathcal{K}`
 
 At termination SCS will either return points :math:`(x^\star,y^\star,s^\star)` that satisfies
-the :ref:`optimality conditions <algorithm>` to the desired accuracy, or a certificate
+the :ref:`optimality conditions <optimality>` to the desired accuracy, or a certificate
 of :ref:`primal or dual infeasibility <infeasibility>` to the designated infeasibility accuracy.
 
 .. The current version is |version|

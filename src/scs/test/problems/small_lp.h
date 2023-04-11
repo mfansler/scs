@@ -28,7 +28,7 @@ static const char *small_lp(void) {
   d->m = m;
   d->n = n;
   gen_random_prob_data(nnz, col_nnz, d, k, opt_sol, seed);
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
   stgs->eps_abs = 1e-5;
   stgs->eps_rel = 1e-5;
 
@@ -44,8 +44,11 @@ static const char *small_lp(void) {
 
   mu_assert("small_lp: SCS failed to produce outputflag SCS_SOLVED", success);
   fail = verify_solution_correct(d, k, stgs, &info, sol, exitflag);
-  SCS(free_data)(d, k, stgs);
+  SCS(free_data)(d);
+  SCS(free_cone)(k);
   SCS(free_sol)(sol);
   SCS(free_sol)(opt_sol);
+  scs_free(stgs);
+
   return fail;
 }

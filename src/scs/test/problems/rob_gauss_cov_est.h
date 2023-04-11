@@ -1,6 +1,8 @@
 #include "glbopts.h"
 #include "linalg.h"
 #include "minunit.h"
+#include "problem_utils.h"
+#include "rw.h"
 #include "scs.h"
 #include "scs_matrix.h"
 #include "util.h"
@@ -13,7 +15,7 @@ static const char *rob_gauss_cov_est(void) {
   ScsInfo info = {0};
   scs_int exitflag;
   scs_float perr, derr;
-  scs_int success;
+  scs_int success, read_status;
   const char *fail;
 
   /* data */
@@ -155,7 +157,7 @@ static const char *rob_gauss_cov_est(void) {
   k->p = p;
   k->psize = psize;
 
-  SCS(set_default_settings)(stgs);
+  scs_set_default_settings(stgs);
   stgs->eps_abs = 1e-6;
   stgs->eps_rel = 1e-6;
   stgs->eps_infeas = 1e-9;
@@ -173,6 +175,8 @@ static const char *rob_gauss_cov_est(void) {
   mu_assert("rob_gauss_cov_est: SCS failed to produce outputflag SCS_SOLVED",
             success);
   fail = verify_solution_correct(d, k, stgs, &info, sol, exitflag);
+  if (fail)
+    return fail;
 
   /* test warm-starting */
   stgs->warm_start = 1;
@@ -196,7 +200,12 @@ static const char *rob_gauss_cov_est(void) {
   scs_free(stgs);
   scs_free(d);
 
-  SCS(read_data)("rob_gauss_cov_est", &d, &k, &stgs);
+  read_status = SCS(read_data)("rob_gauss_cov_est", &d, &k, &stgs);
+
+  if (read_status < 0) {
+    return "Data read failure, exit.\n";
+  }
+
   stgs->max_iters = 1000;
   /* solve with read data */
   exitflag = scs(d, k, stgs, sol, &info);
@@ -236,7 +245,10 @@ static const char *rob_gauss_cov_est(void) {
   mu_assert("rob_gauss_cov_est_rw: SCS failed to produce outputflag SCS_SOLVED",
             success);
 
+  SCS(free_data)(d);
+  SCS(free_cone)(k);
   SCS(free_sol)(sol);
-  SCS(free_data)(d, k, stgs);
+  scs_free(stgs);
+
   return fail;
 }
