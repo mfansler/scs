@@ -74,7 +74,6 @@ MKLSRC = $(LINSYS)/mkl/direct
 EXTSRC = $(LINSYS)/external
 
 OUT = out
-AR = ar
 ARFLAGS = rv
 ARCHIVE = $(AR) $(ARFLAGS)
 RANLIB = ranlib
