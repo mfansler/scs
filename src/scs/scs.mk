@@ -76,7 +76,6 @@ EXTSRC = $(LINSYS)/external
 OUT = out
 ARFLAGS = rv
 ARCHIVE = $(AR) $(ARFLAGS)
-RANLIB = ranlib
 INSTALL = install
 
 ifeq ($(PREFIX),)
